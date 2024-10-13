@@ -1,5 +1,5 @@
 {
-    "name": "autoversion",
+    "name": "@xairo/autoversion",
     "version": "1.0.0",
     "description": "A tool to update version numbers in files based on Git revision count",
     "main": "index.js",
