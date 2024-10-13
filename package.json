@@ -1,0 +1,19 @@
+{
+    "name": "autoversion",
+    "version": "1.0.0",
+    "description": "A tool to update version numbers in files based on Git revision count",
+    "main": "index.js",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/Xairooo/autoversion.git"
+    },
+    "author": "Sebastian 'Xairooo' Streichan",
+    "bin": {
+        "git-version-updater": "./cli.js"
+    },
+    "dependencies": {
+        "commander": "^8.3.0",
+        "semver": "^7.6.3"
+    },
+    "preferGlobal": true
+}
