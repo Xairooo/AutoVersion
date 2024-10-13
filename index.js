@@ -39,7 +39,13 @@ function getCurrentVersion() {
   }
   return '0.1.0';
 }
-
+function getGetTemplateFileName() {
+    if (fs.existsSync(VERSIONFILE)) {
+      const Data = JSON.parse(fs.readFileSync(VERSIONFILE, 'utf8'));
+      return Data.TemplateFileName;
+    }
+    return null;
+  }
 function incrementVersion(currentVersion, incrementType) {
   switch (incrementType) {
     case 'major':
@@ -51,12 +57,15 @@ function incrementVersion(currentVersion, incrementType) {
       return semver.inc(currentVersion, 'patch');
   }
 }
-
+function getCurrentDate() {
+    const now = new Date();
+    return now.toISOString().split('T')[0];
+  }
 function updateTemplateFile(templateFile, version, date) {
   try {
-    let content = fs.readFileSync(templateFile, 'utf8');
-    content = content.replace(/\{version\}/g, version);
-    content = content.replace(/\{date\}/g, date);
+    let content = fs.readFileSync(templateFile, 'utf8');    
+    content = content.replace(/\{version\}/g, version).replace(/v\d+\.\d+\.\d+/g, version);
+    content = content.replace(/\{date\}/g, date).replace(/\d{4}-\d{2}-\d{2}/g, date);
     fs.writeFileSync(templateFile, content);
     console.log(`Updated template file: ${templateFile}`);
   } catch (error) {
@@ -73,14 +82,19 @@ function commitVersionUpdate(incrementType = 'patch', templateFile = null) {
 
     const currentVersion = getCurrentVersion();
     const newVersion = incrementVersion(currentVersion, incrementType);
-    const buildDate = new Date().toDateString();
-    const filenames = fs.readFileSync(STATUSFILE, 'utf8').split('\n').filter(Boolean);
+    const buildDate = getCurrentDate();
+    if  (templateFile === null) {
+        templateFile =  getGetTemplateFileName();
+    }
 
-    // Update version.json
     const versionData = {
       version: newVersion,
-      buildDate: buildDate
+      buildDate: buildDate,      
     };
+    if  (templateFile !== null) {
+        versionData.TemplateFileName = templateFile;
+    }
+
     fs.writeFileSync(VERSIONFILE, JSON.stringify(versionData, null, 2));
     console.log(`Updated ${VERSIONFILE}`);
 
@@ -88,25 +102,6 @@ function commitVersionUpdate(incrementType = 'patch', templateFile = null) {
     if (templateFile) {
       updateTemplateFile(templateFile, newVersion, buildDate);
     }
-
-    filenames.forEach(filename => {
-      try {
-        const fullPath = path.resolve(filename);
-        if (fs.statSync(fullPath).isDirectory()) {
-          console.log(`Skipping directory: ${filename}`);
-          return;
-        }
-        let content = fs.readFileSync(fullPath, 'utf8');
-        content = content.replace(/\$Rev[^\$]*\$/g, `$Rev: ${newVersion}$`);
-        content = content.replace(/\$Date[^\$]*\$/g, `$Date: ${buildDate}$`);
-        fs.writeFileSync(fullPath, content);
-        console.log(`Updated: ${filename}`);
-      } catch (error) {
-        console.error(`Error processing file ${filename}:`, error);
-      }
-    });
-
-    fs.unlinkSync(STATUSFILE);
 
     // Add version.json and template file (if specified) to git
     execSync('git add version.json');
